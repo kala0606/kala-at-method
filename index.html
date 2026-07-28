@@ -116,13 +116,33 @@ figure.grammar figcaption {
 figure.grammar figcaption b { font-style:normal; font-weight:600; color:var(--ink); }
 .tiles { display:grid; grid-template-columns:repeat(8,1fr); gap:11px; }
 .plates { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
-.tiles .t, .plates .p { text-align:center; }
+.tiles .t { text-align:center; }
 .tiles svg, .plates svg { width:100%; height:auto; display:block; color:var(--ink); }
 .tiles .n, .plates .n {
-  font-size:.62rem; letter-spacing:.13em; text-transform:uppercase;
+  display:block; font-size:.62rem; letter-spacing:.13em; text-transform:uppercase;
   color:var(--ink-3); margin-top:8px;
 }
 .plates .n { font-size:.68rem; letter-spacing:.16em; margin-top:11px; }
+
+/* each study is a button: click it and the same rules deal another */
+.plates .p {
+  display:block; width:100%; text-align:center; cursor:pointer;
+  font:inherit; color:inherit; background:none; border:0; padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.plates .k { display:block; }
+.plates .p svg { transition:opacity .2s; }
+.plates .p:hover svg { opacity:.5; }
+.plates .p:hover .n, .plates .p:focus-visible .n { color:var(--ink); }
+.plates .p:focus-visible { outline:none; }
+.plates .p:focus-visible svg { opacity:.5; }
+.plates .p:active svg { opacity:.28; }
+@keyframes ok-deal { from { opacity:0; } to { opacity:1; } }
+.plates .k svg { animation:ok-deal .3s ease-out; }
+@media (prefers-reduced-motion:reduce){
+  .plates .k svg { animation:none; }
+  .plates .p svg { transition:none; }
+}
 @media (max-width:640px){
   .tiles { grid-template-columns:repeat(4,1fr); gap:16px; }
   .plates { grid-template-columns:repeat(2,1fr); }
@@ -402,7 +422,9 @@ figure.grammar figcaption b { font-style:normal; font-weight:600; color:var(--in
       Eight studies — one vocabulary, the settings turned by hand. <b>These are
       not moments</b>, they are what the machine can do: five dots and an open
       hand at one end, eleven and a dense one at the other, and one that
-      recurses two levels down into itself.
+      recurses two levels down into itself. <b>Click any of them</b> and the
+      same rules — same family, same fold, same dots, same ink — deal another.
+      They do not run out.
     </figcaption>
   </figure>
   <p class="lead">
@@ -2225,26 +2247,47 @@ function showGrammar() {
        and the recursion; the family weighting on its own barely moves the
        drawing, so showing four families would show four near-identical
        squares and claim a range that isn't there. */
-    fams.innerHTML = [
-      { order:  5, rate: 0.32, sym: 'quad', depth: 1, n: 'five dots · open' },
-      { order:  7, rate: 0.32, sym: 'rot2', depth: 1, n: 'seven · half-turn' },
-      { order:  9, rate: 0.34, sym: 'my',   depth: 1, n: 'nine · mirrored' },
-      { order: 11, rate: 0.32, sym: 'quad', depth: 1, n: 'eleven · open' },
+    var STUDIES = [
+      /* The open/dense pairs are set at 0.22 and 0.82, not 0.32 and 0.72, so
+         that the two bands never overlap. A collapse is a roll: at the closer
+         settings an unlucky "open" deal comes out busier than a lucky "dense"
+         one, and since the reader can re-deal these all day, the label has to
+         hold for every roll and not just the first. Verified over 24 deals a
+         cell: the busiest open is always sparser than the sparsest dense. */
+      { order:  5, rate: 0.22, sym: 'quad', depth: 1, n: 'five dots · open' },
+      { order:  7, rate: 0.22, sym: 'rot2', depth: 1, n: 'seven · half-turn' },
+      { order:  9, rate: 0.24, sym: 'my',   depth: 1, n: 'nine · mirrored' },
+      { order: 11, rate: 0.22, sym: 'quad', depth: 1, n: 'eleven · open' },
       { order:  5, rate: 0.40, sym: 'rot2', depth: 2, n: 'five · two levels' },
-      { order:  7, rate: 0.70, sym: 'quad', depth: 1, n: 'seven · dense' },
-      { order:  9, rate: 0.72, sym: 'mx',   depth: 1, n: 'nine · dense' },
-      { order: 11, rate: 0.74, sym: 'quad', depth: 1, n: 'eleven · dense' }
-    ].map(function (s) {
+      { order:  7, rate: 0.82, sym: 'quad', depth: 1, n: 'seven · dense' },
+      { order:  9, rate: 0.82, sym: 'mx',   depth: 1, n: 'nine · dense' },
+      { order: 11, rate: 0.82, sym: 'quad', depth: 1, n: 'eleven · dense' }
+    ];
+    /* Everything is held: the family, the fold, the dots, the ink, the depth.
+       Only the collapse is dealt again — which is the whole claim, that one
+       set of rules never runs out of drawings. */
+    var deal = function (s, n) {
       var fam = Kolam.sikku(LAW + ':2026-07');
       fam.depth = s.depth;
       var C = 100, W = s.order * C;
-      var res = Kolam.weave(fam, {
-        seed: 'study:' + s.n, w: W, h: W, cell: C,
+      return Kolam.svgOf(Kolam.weave(fam, {
+        seed: 'study:' + s.n + ':' + n, w: W, h: W, cell: C,
         sym: s.sym, rate: s.rate, depth: s.depth, minCell: 5
-      });
-      return '<div class="p">' + Kolam.svgOf(res, { weight: 5, prec: 2 }) +
-        '<div class="n">' + s.n + '</div></div>';
+      }), { weight: 5, prec: 2 });
+    };
+    var dealt = STUDIES.map(function () { return 0; });
+    fams.innerHTML = STUDIES.map(function (s, i) {
+      return '<button type="button" class="p" data-i="' + i + '" ' +
+        'aria-label="' + s.n + ' — draw another from the same rules">' +
+        '<span class="k">' + deal(s, 0) + '</span>' +
+        '<span class="n">' + s.n + '</span></button>';
     }).join('');
+    fams.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.p') : null;
+      if (!b) return;
+      var i = +b.getAttribute('data-i');
+      b.querySelector('.k').innerHTML = deal(STUDIES[i], ++dealt[i]);
+    });
   }
 }
 
