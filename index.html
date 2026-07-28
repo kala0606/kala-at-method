@@ -322,8 +322,10 @@ figure.grammar figcaption b { font-style:normal; font-weight:600; color:var(--in
   <p class="lead">
     There is a set of rules, and the rules are given a moment — a date, an
     hour, a minute, a second. From that moment alone they produce one drawing,
-    and only ever that one. Ask for the same moment in ten years and you get
-    the identical drawing, down to the last curve. Anyone can check.
+    and only ever that one. Ask the same rules for the same moment in ten years
+    and you get the identical drawing, down to the last curve — which is why
+    every sheet prints, at its foot, which version of the rules drew it. Anyone
+    can check.
   </p>
   <p class="lead">
     It is drawn, not printed. A mechanical pen moves across the paper at about
@@ -389,27 +391,27 @@ figure.grammar figcaption b { font-style:normal; font-weight:600; color:var(--in
     </figcaption>
   </figure>
   <p class="lead">
-    A grammar is a weighting of them — how much this drawing favours a turn
-    over a loop, how readily it closes, how often the line may take a gap. The
-    vocabulary never changes. The weighting is what gives a set of drawings a
-    character, the way one household's kolams look like that household's.
+    Over that vocabulary sit a handful of settings: how many dots to a side,
+    how the field folds, how heavily the ink is laid, how far the line may
+    recurse into itself. That is the whole machine. It is a small machine, and
+    the range it covers is not.
   </p>
   <figure class="grammar">
     <div class="plates" id="ok-families"></div>
     <figcaption>
-      Four grammars — one for each of July, August, September and October 2026.
-      Same eight tiles, weighted differently, and the difference is legible
-      across a room. Shown at <b>five dots to a side and one level of
-      recursion</b> so the tiles stay visible; a real plate runs deeper and
-      denser than this.
+      Eight studies — one vocabulary, the settings turned by hand. <b>These are
+      not moments</b>, they are what the machine can do: five dots and an open
+      hand at one end, eleven and a dense one at the other, and one that
+      recurses two levels down into itself.
     </figcaption>
   </figure>
   <p class="lead">
-    Which grammar a moment is given, and how its hour and its minute move the
-    ink and the hand across it, is <b>the part still being worked out</b>. It
-    is written down and it runs — every drawing on this page came out of it —
-    but it is not finished, and I would rather say so here than have you find
-    it out standing in the room.
+    Which of those settings a given second is handed — which fold, how many
+    dots, how heavy — is the law, and <b>the law is the part I have not
+    finished designing</b>. It is written down and it runs; every plate in this
+    document came out of it, and every plate prints on its own foot which
+    version drew it. But the choosing is still open, and I would rather show
+    you the range and say so than dress up a decision I have not made.
   </p>
 <!-- ==== INSTRUMENT: built, do not edit ==== -->
   <div class="press" id="press">
@@ -2218,15 +2220,31 @@ function showGrammar() {
     }).join('');
   }
   if (fams) {
-    fams.innerHTML = [[7, 'July'], [8, 'August'], [9, 'September'], [10, 'October']]
-      .map(function (m) {
-        var fam = Kolam.sikku(LAW + ':2026-' + pad2(m[0]));
-        /* five dots to a side and one level of recursion: shallow enough that
-           the tiles themselves stay readable. A plate runs deeper. */
-        return '<div class="p">' +
-          Kolam.plate(fam, 1, { order: 5, sym: 'quad', depth: 1, weight: 5 }) +
-          '<div class="n">' + m[1] + '</div></div>';
-      }).join('');
+    /* Eight studies, not moments — the knobs turned by hand, the way the
+       press's playground turns them. The variety is in the dots, the density
+       and the recursion; the family weighting on its own barely moves the
+       drawing, so showing four families would show four near-identical
+       squares and claim a range that isn't there. */
+    fams.innerHTML = [
+      { order:  5, rate: 0.32, sym: 'quad', depth: 1, n: 'five dots · open' },
+      { order:  7, rate: 0.32, sym: 'rot2', depth: 1, n: 'seven · half-turn' },
+      { order:  9, rate: 0.34, sym: 'my',   depth: 1, n: 'nine · mirrored' },
+      { order: 11, rate: 0.32, sym: 'quad', depth: 1, n: 'eleven · open' },
+      { order:  5, rate: 0.40, sym: 'rot2', depth: 2, n: 'five · two levels' },
+      { order:  7, rate: 0.70, sym: 'quad', depth: 1, n: 'seven · dense' },
+      { order:  9, rate: 0.72, sym: 'mx',   depth: 1, n: 'nine · dense' },
+      { order: 11, rate: 0.74, sym: 'quad', depth: 1, n: 'eleven · dense' }
+    ].map(function (s) {
+      var fam = Kolam.sikku(LAW + ':2026-07');
+      fam.depth = s.depth;
+      var C = 100, W = s.order * C;
+      var res = Kolam.weave(fam, {
+        seed: 'study:' + s.n, w: W, h: W, cell: C,
+        sym: s.sym, rate: s.rate, depth: s.depth, minCell: 5
+      });
+      return '<div class="p">' + Kolam.svgOf(res, { weight: 5, prec: 2 }) +
+        '<div class="n">' + s.n + '</div></div>';
+    }).join('');
   }
 }
 
